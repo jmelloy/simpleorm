@@ -146,7 +146,7 @@ class DBConnection():
             return q.exec_select(self.conn, return_type)
 
     def select_sql(self, sql, return_type = 'dict'):
-        q = query(sql)
+        q = Query(sql)
         self.query_list.append(q)
         if return_type == 'json':
             return q.exec_select_json(self.conn)
@@ -154,9 +154,9 @@ class DBConnection():
             return q.exec_select(self.conn, return_type)
 
     def update(self, from_clause, set_list, where=None):
-        set_clause = ", ".join(["%s = '%s'" % (x, self.bind(set_list[x])) for x in set_list.keys()])
+        set_clause = ", ".join(["%s = '%s'" % (x, Query.bind(set_list[x])) for x in set_list.keys()])
 
-        query = "update %s set %s %s" % (from_clause, set_clause, Query.where_clause(where))
+        query = "update %s set %s %s" % (from_clause, set_clause, self.where_clause(where))
         
         q = Query(query)
         self.query_list.append(q)
@@ -190,7 +190,7 @@ class DBConnection():
         q = Query(query)
         self.query_list.append(q)
         
-        return q.exec_update(query)
+        return q.exec_update(self.conn)
     
     @staticmethod
     def where_clause(where):
