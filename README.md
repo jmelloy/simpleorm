@@ -52,9 +52,18 @@ Joins and specific columns are easy, too:
     >>> rset = db.select("library_books join library_authors using (author_id)",
                     select_list=['library_books.id','library_authors.author', 'library_books.*'])
 
-Other common methods are also included:
+Other common DML methods are also included:
     >>> rowcount = db.insert("library_books", {"Title":"The Long Dark Tea-Time of the Soul", "Author":"Douglas Adams"})
     >>> rowcount = db.update("library_books", set_list={"publication_date":"1988"}, where={"Title":"The Long Dark Tea-Time of the Soul", "Author":"Douglas Adams"})
     >>> rowcount = db.upsert("library_books", set_list={"publication_date":"1987"}, where={"Title": "Dirk Gently's Holistic Detective Agency", "Author":"Douglas Adams"})
     >>> rowcount = db.delete("library_books", where={"author":"Douglas Adams"})
 
+Query history is also stored against the connection object. This can be useful for debugging.
+    >>> for q in db.query_list:
+    ...     print q.start_time, q.sql
+    2011-02-06 16:03:29.696823 select id, title, asin, publisher, series from library_books  where author = 'Douglas Adams' 
+    2011-02-06 16:03:55.431193 select id, title, asin, publisher, series from library_books  where author = 'Douglas Adams'  order by series
+    2011-02-06 16:04:01.911664 select id, title, asin, publisher, series from library_books  where author = 'Douglas Adams'  order by series
+    2011-02-06 16:07:02.245439 select  *  from library_books  
+    2011-02-06 16:08:31.371552 select  *  from library_books  where author = 'Douglas Adams' 
+    
