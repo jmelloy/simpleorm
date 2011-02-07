@@ -77,8 +77,8 @@ class Query():
 
             query["columns"] = columns
             query["rows"] = rows
-            query["run_date"] = end_time
-            query["run_time"] = self.delta_to_seconds(end_time - start_time)
+            query["run_date"] = self.end_time
+            query["run_time"] = self.delta_to_seconds(self.end_time - self.start_time)
             query["total_rows"] = curs.rowcount
             
             
@@ -181,7 +181,9 @@ class DBConnection():
     
     def upsert(self, from_clause, set_list, where):
         x = self.update(from_clause, set_list, where)
-        if x == 0:
+        if x == 0 and type(where) == type({}):
+            x = self.insert(from_clause, set_list.update(where))
+        elif x == 0:
             x = self.insert(from_clause, set_list)
         return x
         
