@@ -126,6 +126,15 @@ class DBConnection():
     def __str__(self):
         return str(self.conn)
     
+    def commit(self):
+        return self.conn.commit()
+        
+    def rollback(self):
+        return self.conn.rollback()
+        
+    def close(self):
+        return self.conn.close()
+    
     def select(self, from_clause, where = None, order = None, select_list = None, return_type='dict'):
         select_clause =  " * "
         if select_list:
@@ -171,7 +180,7 @@ class DBConnection():
     
     def insert(self, from_clause, columns):
         column_list = ", ".join(columns.keys())
-        value_list = "', '".join([columns[x] for x in columns.keys()])
+        value_list = "', '".join([Query.bind(columns[x]) for x in columns.keys()])
         query = "insert into %s (%s) values ('%s')" % (from_clause, column_list, value_list)
         
         q = Query(query)
