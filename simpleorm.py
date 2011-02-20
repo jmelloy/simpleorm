@@ -107,7 +107,11 @@ class Query():
             
     @staticmethod
     def bind(a):
-        return str(a).replace("'", "''")
+        if a == None:
+            return "null"
+        if type(a) == type(0) or type(a) == type(0.0):
+            return str(a)
+        return "'%s'" % str(a).replace("'", "''")
     
     @staticmethod
     def delta_to_seconds(dt):
@@ -119,10 +123,16 @@ class Query():
     
 class DBConnection():
             
-    def __init__(self, conn):
+    def __init__(self, conn, store_queries = 10):
         self.conn = conn
         self.query_list = []
+        self.store_queries = store_queries
         
+    def add_query(self, q):
+        self.query_list.append(q)
+        while len(self.query_list) > self.store_queries:
+            self.query_list.pop(0)
+
     def __str__(self):
         return str(self.conn)
     
@@ -147,7 +157,7 @@ class DBConnection():
         query = "select %s from %s %s %s" % (select_clause, from_clause, self.where_clause(where), order_by_clause)
         
         q = Query(query)
-        self.query_list.append(q)
+        self.add_query(q)
         
         if return_type == 'json':
             return q.exec_select_json(self.conn)
@@ -156,35 +166,35 @@ class DBConnection():
 
     def select_sql(self, sql, return_type = 'dict'):
         q = Query(sql)
-        self.query_list.append(q)
+        self.add_query(q)
         if return_type == 'json':
             return q.exec_select_json(self.conn)
         else:
             return q.exec_select(self.conn, return_type)
 
     def update(self, from_clause, set_list, where=None):
-        set_clause = ", ".join(["%s = '%s'" % (x, Query.bind(set_list[x])) for x in set_list.keys()])
+        set_clause = ", ".join(["%s = %s" % (x, Query.bind(set_list[x])) for x in set_list.keys()])
 
         query = "update %s set %s %s" % (from_clause, set_clause, self.where_clause(where))
         
         q = Query(query)
-        self.query_list.append(q)
+        self.add_query(q)
         
         return q.exec_update(self.conn)
     
     def update_sql(self, sql):
         q = Query(sql)
-        self.query_list.append(q)
+        self.add_query(q)
         
         return q.exec_update(self.conn)
     
     def insert(self, from_clause, columns):
         column_list = ", ".join(columns.keys())
-        value_list = "', '".join([Query.bind(columns[x]) for x in columns.keys()])
-        query = "insert into %s (%s) values ('%s')" % (from_clause, column_list, value_list)
+        value_list = ", ".join([Query.bind(columns[x]) for x in columns.keys()])
+        query = "insert into %s (%s) values (%s)" % (from_clause, column_list, value_list)
         
         q = Query(query)
-        self.query_list.append(q)
+        self.add_query(q)
         
         return q.exec_update(self.conn)
     
@@ -199,7 +209,7 @@ class DBConnection():
     def delete(self, from_clause, where):
         query = "delete from %s %s" % (from_clause, self.where_clause(where))
         q = Query(query)
-        self.query_list.append(q)
+        self.add_query(q)
         
         return q.exec_update(self.conn)
     
@@ -209,7 +219,7 @@ class DBConnection():
             return ""
 
         if type(where) == type({}):
-            return " where " + " and ".join(["%s = '%s'" % (x, Query.bind(where[x])) for x in where.keys()])
+            return " where " + " and ".join(["%s = %s" % (x, Query.bind(where[x])) for x in where.keys()])
 
         if type(where) == type(""):
             return " where " + where
