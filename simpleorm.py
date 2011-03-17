@@ -55,7 +55,7 @@ class Query():
             "total_rows": 5,
             "run_time": "0.002321",
             "run_date": "2010-11-06T15:59:21.810127",
-            "sql": "select id, title, author, asin, publisher from library_books limit 5",
+            "sql": "select id, title, author, asin, publisher from_clause library_books limit 5",
             "columns": ["id", "title", "author", "asin", "publisher"]
         }
         """
@@ -145,13 +145,15 @@ class DBConnection():
     def close(self):
         return self.conn.close()
     
-    def select(self, from_clause, where = None, order = None, select_list = None, return_type='dict'):
+    def select(self, from_clause, where = None, orderby = None, select = None, return_type='dict'):
         select_clause =  " * "
-        if select_list:
-            select_clause = ", ".join(select_list)
-        
+        if select and type(select) == type([]):
+            select_clause = ", ".join(select)
+        elif select and type(select) == type(""):
+            select_clause = select
+
         order_by_clause = ""
-        if order:
+        if orderby:
             order_by_clause = " order by " + order
 
         query = "select %s from %s %s %s" % (select_clause, from_clause, self.where_clause(where), order_by_clause)
@@ -172,8 +174,8 @@ class DBConnection():
         else:
             return q.exec_select(self.conn, return_type)
 
-    def update(self, from_clause, set_list, where=None):
-        set_clause = ", ".join(["%s = %s" % (x, Query.bind(set_list[x])) for x in set_list.keys()])
+    def update(self, from_clause, set, where=None):
+        set_clause = ", ".join(["%s = %s" % (x, Query.bind(set[x])) for x in set.keys()])
 
         query = "update %s set %s %s" % (from_clause, set_clause, self.where_clause(where))
         
@@ -198,16 +200,16 @@ class DBConnection():
         
         return q.exec_update(self.conn)
     
-    def upsert(self, from_clause, set_list, where):
-        x = self.update(from_clause, set_list, where)
+    def upsert(self, from_clause, set, where):
+        x = self.update(from_clause, set, where)
         if x == 0 and type(where) == type({}):
-            x = self.insert(from_clause, set_list.update(where))
+            x = self.insert(from_clause, set.update(where))
         elif x == 0:
-            x = self.insert(from_clause, set_list)
+            x = self.insert(from_clause, set.update(where))
         return x
         
     def delete(self, from_clause, where):
-        query = "delete from %s %s" % (from_clause, self.where_clause(where))
+        query = "delete from_clause %s %s" % (from_clause, self.where_clause(where))
         q = Query(query)
         self.add_query(q)
         
